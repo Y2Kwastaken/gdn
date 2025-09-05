@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Under Construction 🐾</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #dcdde1, #a4b0be);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #2f3542;
+        }
+
+        h1 {
+            font-size: 2.8em;
+            animation: blink 1.5s infinite;
+        }
+
+        p {
+            font-size: 1.2em;
+            max-width: 600px;
+            margin: 15px 0;
+        }
+
+        .loader {
+            margin: 30px auto;
+            border: 6px solid #ccc;
+            border-top: 6px solid #57606f;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+
+        .cat-image {
+            width: 180px;
+            height: auto;
+            border-radius: 12px;
+            margin-top: 30px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            p {
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🐾 Under Construction 🐾</h1>
+    <p>This page is currently being supervised by a very serious Gray engineer. Please check back soon!</p>
+    <div class="loader"></div>
+
+    <!-- Optional: Replace the placeholder below with an actual cat image -->
+    <img src="imgs/grayva-serious.jpg" alt="Grayva" class="cat-image" />
+
+</body>
+
+</html>

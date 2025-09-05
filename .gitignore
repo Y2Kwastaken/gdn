@@ -1,0 +1,4 @@
+.env
+metadata.db
+/secrets
+/build
