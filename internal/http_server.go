@@ -6,25 +6,27 @@ import (
 	"strings"
 )
 
-func SetupHttpServer() {
+func SetupHttpServer(store *FileStore) {
+
 	http.Handle("/", http.FileServer(http.Dir("./resources/assets/public")))
 	http.HandleFunc("/api/v1/", func(response http.ResponseWriter, request *http.Request) {
-		handlePathing(strings.ReplaceAll(request.URL.String(), "/api/v1/", ""), response, request)
+		handlePathing(store, strings.ReplaceAll(request.URL.String(), "/api/v1/", ""), response, request)
 	})
 
 	registerEndpoints()
 
-	err := http.ListenAndServeTLS(":8080", "secrets/public.cert", "secrets/private.key", nil)
+	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func handlePathing(urlPart string, rsp http.ResponseWriter, rqst *http.Request) {
-	result := endpoint_handlers[urlPart]
-	if result == nil {
+func handlePathing(store *FileStore, urlPart string, rsp http.ResponseWriter, rqst *http.Request) {
+	result, ok := endpoint_handlers[urlPart]
+	if !ok {
 		rsp.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
-	rsp.WriteHeader(result(urlPart, rsp, rqst))
+	rsp.WriteHeader(result(store, urlPart, rsp, rqst))
 }
