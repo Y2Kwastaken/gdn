@@ -2,3 +2,4 @@
 metadata.db
 /secrets
 /build
+*.sqlite

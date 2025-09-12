@@ -34,7 +34,7 @@ func SetupHttpServer(store *FileStore) {
 
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	close(cleaningDone)
@@ -53,13 +53,28 @@ func handlePathing(store *FileStore, urlPart string, rsp http.ResponseWriter, rq
 		return
 	}
 
-	result, ok := endpoint_handlers[urlPart]
+	pathParts := strings.Split(strings.Trim(rqst.URL.Path, "/"), "/")
+	if len(pathParts) == 0 {
+		http.Error(rsp, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	resource := pathParts[2] // 0 api 1 v1 2 [resource]
+
+	result, ok := endpoint_handlers[resource]
 	if !ok {
 		http.Error(rsp, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	rsp.WriteHeader(result(store, urlPart, rsp, rqst))
+	var remainderPath string
+	if len(pathParts) > 1 {
+		remainderPath = strings.Join(pathParts[3:], "/")
+	} else {
+		remainderPath = ""
+	}
+
+	result(store, remainderPath, rsp, rqst)
 }
 
 func onVisit(ip string) *rate.Limiter {
