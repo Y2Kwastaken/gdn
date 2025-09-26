@@ -7,6 +7,7 @@ import (
 	"mime"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
@@ -18,6 +19,11 @@ type Metadata struct {
 	Description string   `json:"description"`
 	Tags        []string `json:"tags"`
 	ImageType   string
+}
+
+type IdResponse struct {
+	Ids     uuid.UUIDs `json:ids`
+	Entries int        `json:entries`
 }
 
 var endpoint_handlers = make(map[string]func(*FileStore, string, http.ResponseWriter, *http.Request))
@@ -55,11 +61,84 @@ func getPhoto(store *FileStore, urlPart string, rspn http.ResponseWriter, rqst *
 		return
 	}
 	defer os.Remove(uuidstr)
+	defer log.Println("disposed " + uuidstr)
+	log.Println("serving " + uuidstr)
 	http.ServeFile(rspn, rqst, uuidstr)
 }
 
 func getPhotoIds(store *FileStore, urlPart string, rspn http.ResponseWriter, rqst *http.Request) {
-	println("This endpoint gets a photo id!")
+	query := rqst.URL.Query()
+	limit := -1
+	offset := 0
+	entries := -1
+
+	if query.Has("limit") {
+		limit, err := strconv.Atoi(query.Get("limit"))
+		if err != nil {
+			werr(rspn, http.StatusBadRequest)
+			log.Println(err)
+			return
+		}
+
+		if limit < 1 || limit > 20 {
+			werr(rspn, http.StatusBadRequest)
+			log.Printf("limit out of bounds: %d\n", limit)
+			return
+		}
+	}
+
+	if query.Has("offset") {
+		offset, err := strconv.Atoi(query.Get("offset"))
+		if err != nil {
+			werr(rspn, http.StatusBadRequest)
+			log.Println(err)
+			return
+		}
+
+		if offset < 1 {
+			werr(rspn, http.StatusBadRequest)
+			log.Printf("offset out of bounds: %d\n", offset)
+			return
+		}
+	}
+
+	if query.Has("entries") {
+		entries, err := strconv.Atoi(query.Get("entries"))
+		if err != nil {
+			werr(rspn, http.StatusBadRequest)
+			log.Println(err)
+			return
+		}
+
+		if entries != 1 {
+			werr(rspn, http.StatusBadRequest)
+			log.Println("entries in request is not 1")
+		}
+	}
+
+	var uuids []uuid.UUID
+	if limit != -1 {
+		store.Database.QueryIds(limit, offset)
+	}
+
+	if entries != -1 {
+		rslt, err := store.Database.CountEntries()
+		if err != nil {
+			werr(rspn, http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
+		entries = rslt
+	}
+
+	response := IdResponse{Ids: uuids, Entries: entries}
+
+	rspn.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(rspn).Encode(response); err != nil {
+		werr(rspn, http.StatusInternalServerError)
+		log.Print(err)
+		return
+	}
 }
 
 func putPhoto(store *FileStore, urlPart string, rspn http.ResponseWriter, rqst *http.Request) {

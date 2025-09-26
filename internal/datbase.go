@@ -2,6 +2,7 @@ package internal
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/google/uuid"
 	_ "modernc.org/sqlite"
@@ -145,6 +146,7 @@ func (db *Database) QueryImage(inUUID uuid.UUID) (*ImageMeta, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var tags []string
 	for rows.Next() {
@@ -161,4 +163,46 @@ func (db *Database) QueryImage(inUUID uuid.UUID) (*ImageMeta, error) {
 
 	meta.Tags = tags
 	return meta, nil
+}
+
+func (db *Database) QueryIds(limit int, offset int) ([]uuid.UUID, error) {
+	if limit <= 0 || offset < 0 {
+		return nil, fmt.Errorf("limit or offset out of bounds limit: %d, offset: %d", limit, offset)
+	}
+
+	conn := db.conn
+	query := `SELECT id FROM image_meta LIMIT ? OFFSET ?`
+
+	rows, err := conn.Query(query, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var uuids []uuid.UUID
+	for rows.Next() {
+		var tmp string
+		if err := rows.Scan(&tmp); err != nil {
+			return nil, err
+		}
+
+		uuid, err := uuid.Parse(tmp)
+		if err != nil {
+			return nil, err
+		}
+
+		uuids = append(uuids, uuid)
+	}
+
+	return uuids, nil
+}
+
+func (db *Database) CountEntries() (int, error) {
+	var count int
+	err := db.conn.QueryRow("SELECT COUNT(*) FROM image_meta").Scan(&count)
+	if err != nil {
+		return -1, err
+	}
+
+	return count, nil
 }
