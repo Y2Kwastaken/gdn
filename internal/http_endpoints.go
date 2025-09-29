@@ -2,6 +2,7 @@ package internal
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"mime"
@@ -15,15 +16,15 @@ import (
 )
 
 type Metadata struct {
-	Name        string   `json:"name"`
+	Title       string   `json:"title"`
 	Description string   `json:"description"`
 	Tags        []string `json:"tags"`
 	ImageType   string
 }
 
 type IdResponse struct {
-	Ids     uuid.UUIDs `json:ids`
-	Entries int        `json:entries`
+	Ids     uuid.UUIDs `json:"ids"`
+	Entries int        `json:"entries"`
 }
 
 var endpoint_handlers = make(map[string]func(*FileStore, string, http.ResponseWriter, *http.Request))
@@ -33,13 +34,57 @@ func registerEndpoints() {
 }
 
 func endpointPhotos(store *FileStore, urlPart string, rspn http.ResponseWriter, rqst *http.Request) {
-	if rqst.Method == http.MethodPost {
+	switch rqst.Method {
+	case http.MethodPut:
 		putPhoto(store, urlPart, rspn, rqst)
+	case http.MethodGet:
+		getPhoto(store, urlPart, rspn, rqst)
+	case http.MethodDelete:
+		delPhoto(store, urlPart, rspn, rqst)
+	default:
+		werr(rspn, http.StatusBadRequest)
 	}
 
-	if rqst.Method == http.MethodGet {
-		getPhoto(store, urlPart, rspn, rqst)
+}
+
+func delPhoto(store *FileStore, urlPart string, rspn http.ResponseWriter, rqst *http.Request) {
+	if rqst.Header.Get("X-API-Key") != os.Getenv("ADMIN_SECRET") {
+		werr(rspn, http.StatusUnauthorized)
+		return
 	}
+
+	uuid, err := uuid.Parse(urlPart)
+	if err != nil {
+		http.Error(rspn, "Unable to parse photo uuid from"+urlPart+" wrong endpoint?", http.StatusBadRequest)
+		return
+	}
+	uuidstr := uuid.String()
+
+	err = store.Client.RemoveObject(rqst.Context(), "images", uuidstr, minio.RemoveObjectOptions{})
+	if err != nil {
+		werr(rspn, http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+
+	err = store.Database.DeleteImage(uuid)
+	if err != nil {
+		werr(rspn, http.StatusInternalServerError)
+		log.Println("[SEVERE] Couldn't remove image of uuid ", uuid, "Manual removal might be required ", err)
+		// this is bad we should try atleast 10 more times otherwise note this in logs
+
+		for i := range 10 {
+			err = store.Database.DeleteImage(uuid)
+			if err != nil {
+				log.Println("[SEVERE] ", i, "/10", " Couldn't remove image of uuid ", uuid, "Manual removal might be required ", err)
+			}
+		}
+
+		log.Println("[SEVERE] unable to delete the uuid ", uuid, " from the database Manual removal IS REQUIRED")
+		return
+	}
+
+	wstd(rspn, http.StatusOK)
 }
 
 func getPhoto(store *FileStore, urlPart string, rspn http.ResponseWriter, rqst *http.Request) {
@@ -48,77 +93,106 @@ func getPhoto(store *FileStore, urlPart string, rspn http.ResponseWriter, rqst *
 		return
 	}
 	uuid, err := uuid.Parse(urlPart)
-	uuidstr := uuid.String()
 	if err != nil {
 		http.Error(rspn, "Unlabe to parse photo uuid from "+urlPart+" wrong endpoint?", http.StatusBadRequest)
 		return
 	}
+	uuidstr := uuid.String()
 
-	err = store.Client.FGetObject(rqst.Context(), "images", uuidstr, uuidstr, minio.GetObjectOptions{})
+	meta, err := store.Database.QueryImage(uuid)
 	if err != nil {
 		werr(rspn, http.StatusInternalServerError)
 		log.Println(err)
 		return
 	}
-	defer os.Remove(uuidstr)
-	defer log.Println("disposed " + uuidstr)
-	log.Println("serving " + uuidstr)
-	http.ServeFile(rspn, rqst, uuidstr)
+
+	if meta == nil {
+		http.Error(rspn, "No image with uuid "+uuidstr, http.StatusBadRequest)
+		log.Println("No image with uuid", uuidstr)
+		return
+	}
+
+	path := meta.ImageName
+	err = store.Client.FGetObject(rqst.Context(), "images", uuidstr, path, minio.GetObjectOptions{})
+	if err != nil {
+		werr(rspn, http.StatusInternalServerError)
+		log.Println(err)
+		return
+	}
+	defer os.Remove(path)
+	defer log.Println("disposed " + path)
+	log.Println("serving ", path)
+
+	rspn.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, path))
+	http.ServeFile(rspn, rqst, path)
 }
 
-func getPhotoIds(store *FileStore, urlPart string, rspn http.ResponseWriter, rqst *http.Request) {
+func getPhotoIds(store *FileStore, _ string, rspn http.ResponseWriter, rqst *http.Request) {
 	query := rqst.URL.Query()
 	limit := -1
 	offset := 0
 	entries := -1
 
 	if query.Has("limit") {
-		limit, err := strconv.Atoi(query.Get("limit"))
+		rslt, err := strconv.Atoi(query.Get("limit"))
 		if err != nil {
 			werr(rspn, http.StatusBadRequest)
 			log.Println(err)
 			return
 		}
 
-		if limit < 1 || limit > 20 {
+		if rslt < 1 || rslt > 20 {
 			werr(rspn, http.StatusBadRequest)
-			log.Printf("limit out of bounds: %d\n", limit)
+			log.Printf("limit out of bounds: %d\n", rslt)
 			return
 		}
+		limit = rslt
+	} else {
+		limit = 20
 	}
 
 	if query.Has("offset") {
-		offset, err := strconv.Atoi(query.Get("offset"))
+		rslt, err := strconv.Atoi(query.Get("offset"))
 		if err != nil {
 			werr(rspn, http.StatusBadRequest)
 			log.Println(err)
 			return
 		}
 
-		if offset < 1 {
+		if rslt < 0 {
 			werr(rspn, http.StatusBadRequest)
 			log.Printf("offset out of bounds: %d\n", offset)
 			return
 		}
+		offset = rslt
 	}
 
 	if query.Has("entries") {
-		entries, err := strconv.Atoi(query.Get("entries"))
+		rslt, err := strconv.Atoi(query.Get("entries"))
 		if err != nil {
 			werr(rspn, http.StatusBadRequest)
 			log.Println(err)
 			return
 		}
 
-		if entries != 1 {
+		if rslt != 1 {
 			werr(rspn, http.StatusBadRequest)
 			log.Println("entries in request is not 1")
+			return
 		}
+
+		entries = rslt
 	}
 
 	var uuids []uuid.UUID
 	if limit != -1 {
-		store.Database.QueryIds(limit, offset)
+		rslt, err := store.Database.QueryIds(limit, offset)
+		if err != nil {
+			werr(rspn, http.StatusInternalServerError)
+			log.Println(err)
+			return
+		}
+		uuids = rslt
 	}
 
 	if entries != -1 {
@@ -129,6 +203,11 @@ func getPhotoIds(store *FileStore, urlPart string, rspn http.ResponseWriter, rqs
 			return
 		}
 		entries = rslt
+
+		if offset >= entries {
+			http.Error(rspn, "offset greater than or equal to total entry length", http.StatusBadRequest)
+			return
+		}
 	}
 
 	response := IdResponse{Ids: uuids, Entries: entries}
@@ -136,12 +215,12 @@ func getPhotoIds(store *FileStore, urlPart string, rspn http.ResponseWriter, rqs
 	rspn.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(rspn).Encode(response); err != nil {
 		werr(rspn, http.StatusInternalServerError)
-		log.Print(err)
+		log.Println(err)
 		return
 	}
 }
 
-func putPhoto(store *FileStore, urlPart string, rspn http.ResponseWriter, rqst *http.Request) {
+func putPhoto(store *FileStore, _ string, rspn http.ResponseWriter, rqst *http.Request) {
 	if rqst.Header.Get("X-API-Key") != os.Getenv("ADMIN_SECRET") {
 		werr(rspn, http.StatusUnauthorized)
 		return
@@ -189,6 +268,11 @@ func putPhoto(store *FileStore, urlPart string, rspn http.ResponseWriter, rqst *
 		http.Error(rspn, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
+
+	if metadata.Title == "" {
+		http.Error(rspn, "Title Required", http.StatusBadRequest)
+		return
+	}
 	part.Close()
 
 	part, err = reader.NextPart()
@@ -215,16 +299,7 @@ func putPhoto(store *FileStore, urlPart string, rspn http.ResponseWriter, rqst *
 	}
 	part.Close()
 
-	// var metadata Metadata
-	// if err := json.Unmarshal([]byte(rqst.PostFormValue("metadata")), &metadata); err != nil {
-	// 	http.Error(rspn, "Invalid JSON", http.StatusBadRequest)
-	// 	return
-	// }
-
-	// println(metadata.Name)
-	// println(metadata.Description)
-	// println(strings.Join(metadata.Tags, ","))
-
+	log.Println("Uploaded Image", metadata.Title)
 	wstd(rspn, http.StatusOK)
 }
 

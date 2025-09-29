@@ -2,6 +2,7 @@ package internal
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -70,7 +71,7 @@ func (db *Database) UploadImageMeta(metadata *Metadata) (*uuid.UUID, error) {
 		return nil, err
 	}
 
-	_, err = conn.Exec(query, imageIdBytes, metadata.Name, metadata.ImageType, metadata.Description)
+	_, err = conn.Exec(query, imageIdBytes, metadata.Title, metadata.ImageType, metadata.Description)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +82,9 @@ func (db *Database) UploadImageMeta(metadata *Metadata) (*uuid.UUID, error) {
 	}
 
 	query = `INSERT INTO image_tags (id, tag) VALUES ( ?, ? )`
-	for tag := range metadata.Tags {
+	for i := range metadata.Tags {
+		tag := metadata.Tags[i]
+		println(tag)
 		_, err = trsn.Exec(query, imageIdBytes, tag)
 		if err != nil {
 			return nil, err
@@ -121,7 +124,7 @@ func (db *Database) DeleteImage(uuid uuid.UUID) error {
 
 func (db *Database) QueryImage(inUUID uuid.UUID) (*ImageMeta, error) {
 	conn := db.conn
-	query := `SELECT * FROM image_meta WHERE id = ?`
+	query := `SELECT id, image_name, image_type, description FROM image_meta WHERE id = ?`
 
 	inBytes, err := inUUID.MarshalBinary()
 	if err != nil {
@@ -129,9 +132,14 @@ func (db *Database) QueryImage(inUUID uuid.UUID) (*ImageMeta, error) {
 	}
 
 	row := conn.QueryRow(query, inBytes)
+
 	meta := &ImageMeta{}
-	var uuidBlob [16]byte // this read is useless, but idk if I can just dev/null with scanner
+	var uuidBlob []byte // this read is useless, but idk if I can just dev/null with scanner
 	err = row.Scan(&uuidBlob, &meta.ImageName, &meta.ImageType, &meta.Description)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -141,8 +149,8 @@ func (db *Database) QueryImage(inUUID uuid.UUID) (*ImageMeta, error) {
 		return nil, err
 	}
 
-	query = `SELECT * FROM image_tags WHERE id = ?`
-	rows, err := conn.Query(query, inBytes)
+	query = `SELECT tag FROM image_tags WHERE id = ?`
+	rows, err := conn.Query(query, uuidBlob)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +159,7 @@ func (db *Database) QueryImage(inUUID uuid.UUID) (*ImageMeta, error) {
 	var tags []string
 	for rows.Next() {
 		var tag string
-		if err := rows.Scan(nil, &tag); err != nil {
+		if err := rows.Scan(&tag); err != nil {
 			return nil, err
 		}
 		tags = append(tags, tag)
@@ -181,12 +189,12 @@ func (db *Database) QueryIds(limit int, offset int) ([]uuid.UUID, error) {
 
 	var uuids []uuid.UUID
 	for rows.Next() {
-		var tmp string
+		var tmp []byte
 		if err := rows.Scan(&tmp); err != nil {
 			return nil, err
 		}
 
-		uuid, err := uuid.Parse(tmp)
+		uuid, err := uuid.FromBytes(tmp)
 		if err != nil {
 			return nil, err
 		}

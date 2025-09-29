@@ -1,9 +1,9 @@
 # 🐾 Grayva API Documentation
 
 **Base URL:**  
-[`https://grayva.miles.sh/`](https://grayva.miles.sh/)  
+[`https://domain.com/`](https://domain.com/)  
 **API Endpoint Root:**  
-[`https://grayva.miles.sh/api/v1`](https://grayva.miles.sh/api/v1)
+[`https://domain.com/api/v1`](https://domain.com/api/v1)
 
 ---
 
@@ -14,7 +14,7 @@
 Retrieve metadata for a specific photo by its ID.
 
 **Example:**  
-`GET https://grayva.miles.sh/api/v1/photos/12345`
+`GET https://domain.com/api/v1/photos/12345`
 
 ### `GET /api/v1/photos`
 
@@ -34,19 +34,21 @@ parameters
 
 Create or update a photo entry.
 
-**Headers:**
+#### Headers
 
-```
+```example
 X-API-Key: admin-only-api-key  
 Content-Type: multipart/form-data
 ```
 
-**Forms Content**
+#### Forms Content
 
+```example
+metadata=...;type=application/json
+image=...;type=image/...
 ```
-image=...;type=application/json
-metadata=...;type=image/...
-```
+
+Note the json metadata must be sent first in the series for validation, prior to the image, otherwise your response will be rejected
 
 **Json Body:**
 
@@ -62,15 +64,15 @@ metadata=...;type=image/...
 
 ## 🗑️ DELETE Endpoint
 
-### `DELETE /api/v1/photos?id=<id>`  
+### `DELETE /api/v1/photos/<id>`  
 
 Delete a photo entry by ID.
 
 **Example:**  
-`DELETE https://grayva.miles.sh/api/v1/photos?id=12345`
+`DELETE https://domain.com/api/v1/photos/12345`
 
 **Headers:**
 
-```
+```curl
 X-API-Key: admin-only-api-key
 ```
