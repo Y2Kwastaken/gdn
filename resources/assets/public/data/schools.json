@@ -1,0 +1,23 @@
+[
+    {
+        "name": "School 1",
+        "link": "https://google.com",
+        "image": "imgs/college1.png",
+        "attended": "XXXX - XXXX",
+        "degree": "Bachelors of Science, Computer Science"
+    },
+    {
+        "name": "School 2",
+        "link": "https://google.com",
+        "image": "imgs/college2.png",
+        "attended": "XXXX - XXXX",
+        "degree": "Bachelors of Science, Data Science"
+    },
+    {
+        "name": "School 3",
+        "link": "https://google.com",
+        "image": "imgs/college3.png",
+        "attended": "XXXX - XXXX",
+        "degree": "Masters of Computer Science"
+    }
+]

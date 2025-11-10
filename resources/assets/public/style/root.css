@@ -1,0 +1,19 @@
+:root {
+  /* Brand */
+  --brand-main:       #D59B8B;
+  --brand-tint:       #EDD2C5;
+  --brand-shade:      #B88477;
+
+  /* Surfaces */
+  --surface-base:     #FFF8F3;
+  --surface-raised:   #F5E5DC;
+  --surface-overlay:  #E7D4CA;
+
+  /* Content / Text */
+  --content-default:  #5C4A3D;
+  --content-muted:    #95867B;
+
+  /* Borders */
+  --border-default:   #E0CFC6;
+  --border-strong:    #C6A79A;
+}

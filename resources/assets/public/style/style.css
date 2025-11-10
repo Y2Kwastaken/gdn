@@ -1,0 +1,82 @@
+@import url(root.css);
+
+* {
+    font-family: system-ui, sans-serif;
+    margin: 0;
+}
+
+html {
+    background-color: var(--surface-base);
+}
+
+a img {
+    cursor: pointer;
+}
+
+a:hover img {
+    opacity: 0.8;
+    transform: scale(1.02) rotate(-0.01turn);
+    transition: 0.5s ease;
+}
+
+.content-block {
+    background-color: var(--surface-raised);
+    border-color: var(--border-default);
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 1rem;
+
+    margin: 1rem;
+    padding: 1rem 1.5rem;
+}
+
+.content-title {
+    color: var(--content-default);
+    font-weight: bolder;
+
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.content-block>p {
+    color: var(--content-default);
+}
+
+.content-general {
+    padding-block: 0.5rem;
+    color: var(--content-default);
+}
+
+.content-general p {
+    padding-left: 1rem;
+}
+
+.content-general-header {
+    display: inline-flex;
+    align-items: center;
+}
+
+.content-general-header h3 {
+    padding-left: 0.5em;
+    padding-bottom: 0.5rem;
+    text-align: left;
+}
+
+.content-general-header img {
+    padding-left: 0.5rem;
+    height: 4em;
+    width: 4em;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.footer-block {
+    margin: 1rem;
+    color: var(--content-default)
+}
+
+.footer-block div {
+    font-size: x-small;
+    text-align: right;
+    align-content: center;
+}
