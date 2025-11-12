@@ -1,0 +1,23 @@
+[
+    {
+        "name": "Charity 1",
+        "link": "https://google.com",
+        "image": "imgs/charity1.png",
+        "description": "Explain The Charity",
+        "contribution": "Grayva's Contribution"
+    },
+    {
+        "name": "Charity 2",
+        "link": "https://google.com",
+        "image": "imgs/charity2.png",
+        "description": "Explain The Charity",
+        "contribution": "Grayva's Contribution"
+    },
+    {
+        "name": "Charity 3",
+        "link": "https://google.com",
+        "image": "imgs/charity3.png",
+        "description": "Explain The Charity",
+        "contribution": "Grayva's Contribution"
+    }
+]

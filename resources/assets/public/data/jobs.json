@@ -1,0 +1,29 @@
+[
+    {
+        "company": "Job 1",
+        "link": "https://google.com",
+        "image": "imgs/company1.png",
+        "role": "Feline Social Media Intern",
+        "attended": "XXXX - XXXX",
+        "description": "Managed Grayva's daily photo uploads and caption contests.",
+        "experience_gained": "Learned digital engagement tactics and contest scheduling."
+    },
+    {
+        "company": "Job 2",
+        "link": "https://google.com",
+        "image": "imgs/company2.png",
+        "role": "Assistant Nap Coordinator",
+        "attended": "XXXX - XXXX",
+        "description": "Organized and optimized nap schedules for maximum comfort.",
+        "experience_gained": "Improved time management and environmental optimization techniques."
+    },
+    {
+        "company": "Job 3",
+        "link": "https://google.com",
+        "image": "imgs/company3.png",
+        "role": "Junior Toy Quality Analyst",
+        "attended": "XXXX - XXXX",
+        "description": "Tested durability and enjoyment levels of various cat toys.",
+        "experience_gained": "Developed observational precision and product evaluation skills."
+    }
+]
