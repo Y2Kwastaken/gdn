@@ -11,12 +11,59 @@ html {
 
 a img {
     cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 a:hover img {
     opacity: 0.8;
     transform: scale(1.02) rotate(-0.01turn);
-    transition: 0.5s ease;
+    transform: translateY(-2px);
+}
+
+nav {
+    margin: 0 1rem;
+}
+
+nav ul {
+    background-color: var(--brand-tint);
+    border-radius: 1rem;
+    margin: 0.25rem 0;
+    padding: 0.5rem;
+    list-style: none;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    overflow: hidden;
+}
+
+nav ul li {
+    display: flex;
+    justify-content: flex-start;
+    margin-right: 1rem;
+}
+
+nav ul li a {
+    color: var(--content-default);
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 1rem;
+    border-color: var(--border-strong);;
+    padding: 0.5em 1rem;
+    font-weight: bold;
+    text-decoration: none;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+nav ul li a:hover {
+    background-color: var(--surface-raised);
+    transform: translateY(-2px);
+}
+
+.page-title {
+    color: var(--content-default);
+
+    font-weight: bolder;
+    margin: 0.5rem 1rem;
 }
 
 .content-block {
