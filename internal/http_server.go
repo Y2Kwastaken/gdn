@@ -5,21 +5,6 @@ import (
 	"net"
 	"net/http"
 	"strings"
-	"sync"
-	"time"
-
-	"golang.org/x/time/rate"
-)
-
-type user struct {
-	limiter     *rate.Limiter
-	lastRequest time.Time
-}
-
-var (
-	users        = make(map[string]*user)
-	rwlock       sync.RWMutex
-	cleaningDone = make(chan struct{})
 )
 
 func SetupHttpServer(store *FileStore) {
@@ -48,11 +33,20 @@ func handlePathing(store *FileStore, urlPart string, rsp http.ResponseWriter, rq
 		return
 	}
 
-	limiter := onVisit(ip)
-	if !limiter.Allow() {
+	auth := strings.Contains(urlPart, "auth")
+	usr := onSiteVisit(ip, auth)
+	usr.ulock.RLock()
+	if usr.behaviorScore >= 50 {
+		usr.ulock.RUnlock()
+		http.Error(rsp, "Temporarily Banned", http.StatusForbidden)
+		return
+	}
+	if !usr.limiter.Allow() {
+		usr.ulock.RUnlock()
 		http.Error(rsp, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
 		return
 	}
+	usr.ulock.RUnlock()
 
 	pathParts := strings.Split(strings.Trim(rqst.URL.Path, "/"), "/")
 	if len(pathParts) == 0 {
@@ -76,41 +70,4 @@ func handlePathing(store *FileStore, urlPart string, rsp http.ResponseWriter, rq
 	}
 
 	result(store, remainderPath, rsp, rqst)
-}
-
-func onVisit(ip string) *rate.Limiter {
-	rwlock.RLock()
-
-	usr, ok := users[ip]
-	rwlock.RUnlock()
-	if !ok {
-		rwlock.Lock()
-		limiter := rate.NewLimiter(rate.Every(time.Second/10), 5)
-		users[ip] = &user{limiter: limiter, lastRequest: time.Now()}
-		rwlock.Unlock()
-		return limiter
-	}
-
-	rwlock.Lock()
-	usr.lastRequest = time.Now()
-	rwlock.Unlock()
-
-	return usr.limiter
-}
-
-func cleanLimiters() {
-	for {
-		select {
-		case <-time.After(1 * time.Minute):
-			rwlock.Lock()
-			for ip, usr := range users {
-				if time.Since(usr.lastRequest) >= 5*time.Minute {
-					delete(users, ip)
-				}
-			}
-			rwlock.Unlock()
-		case <-cleaningDone:
-			return
-		}
-	}
 }

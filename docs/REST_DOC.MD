@@ -76,3 +76,26 @@ Delete a photo entry by ID.
 ```curl
 X-API-Key: admin-only-api-key
 ```
+
+## Authentication Endpoint
+
+### `GET /api/v1/auth`
+
+Verify your authentication status
+
+**Example**
+`GET https://domain.com/api/v1/auth`
+
+**Headers:**
+
+```curl
+X-API-Key: admin-only-api key
+```
+
+**Response:**
+
+```json
+{
+  "valid": "true"
+}
+```
