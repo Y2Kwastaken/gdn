@@ -39,7 +39,6 @@ func registerEndpoints() {
 }
 
 func endpointAuth(store *FileStore, urlPart string, rspn http.ResponseWriter, rqst *http.Request) {
-
 	switch rqst.Method {
 	case http.MethodGet:
 		verifyAuth(store, urlPart, rspn, rqst)
