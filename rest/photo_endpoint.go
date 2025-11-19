@@ -1,13 +1,11 @@
-package internal
+package rest
 
 import (
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
-	"math"
 	"mime"
-	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -17,65 +15,7 @@ import (
 	"github.com/minio/minio-go/v7"
 )
 
-type Metadata struct {
-	Title       string   `json:"title"`
-	Description string   `json:"description"`
-	Tags        []string `json:"tags"`
-	ImageType   string
-}
-
-type IdResponse struct {
-	Ids     uuid.UUIDs `json:"ids"`
-	Entries int        `json:"entries"`
-}
-
-var (
-	endpoint_handlers = make(map[string]func(*FileStore, string, http.ResponseWriter, *http.Request))
-)
-
-func registerEndpoints() {
-	endpoint_handlers["photos"] = endpointPhotos
-	endpoint_handlers["auth"] = endpointAuth
-}
-
-func endpointAuth(store *FileStore, urlPart string, rspn http.ResponseWriter, rqst *http.Request) {
-	switch rqst.Method {
-	case http.MethodGet:
-		verifyAuth(store, urlPart, rspn, rqst)
-	default:
-		werr(rspn, http.StatusBadRequest)
-	}
-}
-
-func verifyAuth(_ *FileStore, _ string, rspn http.ResponseWriter, rqst *http.Request) {
-	valid := false
-	if rqst.Header.Get("X-API-Key") == os.Getenv("ADMIN_SECRET") {
-		valid = true
-		// valid can decrement hatred counter :3
-		ip, _, err := net.SplitHostPort(rqst.RemoteAddr)
-		if err != nil {
-			rspn.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		rwlock.RLock()
-		usr, ok := users[ip]
-		rwlock.RUnlock()
-		if ok {
-			usr.ulock.Lock()
-			usr.behaviorScore = int(math.Max(float64(usr.behaviorScore-1), float64(0)))
-			usr.ulock.Unlock()
-			log.Printf("Forgave Behavior Score for %s new score of %d\n", ip, usr.behaviorScore)
-		}
-	}
-
-	rslt := fmt.Sprintf(`{"valid": %v}`, valid)
-	rspn.Header().Set("Content-Type", "application/json")
-	rspn.WriteHeader(201)
-	rspn.Write([]byte(rslt))
-}
-
-func endpointPhotos(store *FileStore, urlPart string, rspn http.ResponseWriter, rqst *http.Request) {
+func PhotoEndpoints(store *FileStore, urlPart string, rspn http.ResponseWriter, rqst *http.Request) {
 	switch rqst.Method {
 	case http.MethodPut:
 		putPhoto(store, urlPart, rspn, rqst)
@@ -343,12 +283,4 @@ func putPhoto(store *FileStore, _ string, rspn http.ResponseWriter, rqst *http.R
 
 	log.Println("Uploaded Image", metadata.Title)
 	wstd(rspn, http.StatusOK)
-}
-
-func wstd(rspn http.ResponseWriter, code int) {
-	rspn.WriteHeader(code)
-}
-
-func werr(rspn http.ResponseWriter, code int) {
-	http.Error(rspn, http.StatusText(code), code)
 }

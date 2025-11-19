@@ -10,15 +10,6 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
-type FileStore struct {
-	address   string
-	Context   context.Context
-	Client    *minio.Client
-	Database  *Database
-	Connected bool
-	buckets   map[string]bool
-}
-
 func NewObjectStore(address string) *FileStore {
 	store := FileStore{address: address, Context: context.Background(), Connected: false, buckets: make(map[string]bool)}
 	return &store

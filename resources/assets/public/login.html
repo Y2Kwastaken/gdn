@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+            align-items: center;
+            justify-content: center;
+            background: #f2f2f2;
+        }
+        .login-container {
+            background: #fff;
+            padding: 25px 35px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+            width: 380px;
+        }
+        .input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        input {
+            flex: 1;
+            padding: 12px;
+            font-size: 15px;
+        }
+        button {
+            padding: 10px;
+            cursor: pointer;
+        }
+        #loginBtn {
+            width: 100%;
+            margin-top: 12px;
+        }
+        .message {
+            margin-top: 12px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <h3>Login</h3>
+
+    <div class="input-row">
+        <input id="apiKey" type="password" placeholder="Enter API Key" />
+        <button onclick="toggleKey()">Show</button>
+    </div>
+
+    <button id="loginBtn" onclick="login()">Login</button>
+
+    <div class="message" id="message"></div>
+</div>
+
+<script>
+function toggleKey() {
+    const field = document.getElementById("apiKey");
+    field.type = field.type === "password" ? "text" : "password";
+}
+
+async function login() {
+    const key = document.getElementById("apiKey").value;
+    const msg = document.getElementById("message");
+
+    msg.textContent = "Checking...";
+    msg.style.color = "black";
+
+    try {
+        const res = await fetch("http://localhost:8080/api/v1/auth", {
+            method: "GET",
+            headers: { "X-API-Key": key }
+        });
+
+        const json = await res.json();
+        console.log(json)
+
+        if (json.valid) {
+            msg.style.color = "green";
+            msg.textContent = "Login successful!";
+        } else {
+            msg.style.color = "red";
+            msg.textContent = "Invalid API Key.";
+        }
+    } catch (err) {
+        msg.style.color = "red";
+        msg.textContent = "Error connecting to server.";
+        console.error(err);
+    }
+}
+</script>
+</body>
+</html>

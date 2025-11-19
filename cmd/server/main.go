@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"github.com/Y2Kwastaken/gdn/httpserv"
 	"github.com/Y2Kwastaken/gdn/internal"
 	_ "modernc.org/sqlite"
 )
@@ -29,5 +30,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	internal.SetupHttpServer(store)
+	httpserv.SetupHttpServer(store)
 }

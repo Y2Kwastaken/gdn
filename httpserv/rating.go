@@ -1,4 +1,4 @@
-package internal
+package httpserv
 
 import (
 	"log"
@@ -10,10 +10,8 @@ import (
 )
 
 type user struct {
-	limiter     *rate.Limiter
-	lastRequest time.Time
-	// a behaviorScore > 0 indicates bad behavior
-	// a behaviorScore = 0 is a neutral or good behavior
+	limiter       *rate.Limiter
+	lastRequest   time.Time
 	behaviorScore int
 	ulock         sync.RWMutex
 }
@@ -33,7 +31,6 @@ func onSiteVisit(ip string, auth bool) *user {
 	}
 
 	if auth {
-		// increment distrust
 		usr.ulock.Lock()
 
 		usr.behaviorScore++
@@ -51,7 +48,6 @@ func onSiteVisit(ip string, auth bool) *user {
 		usr.ulock.Unlock()
 	}
 
-	log.Printf("%s visited with behavior score of %d\n", ip, usr.behaviorScore)
 	return usr
 }
 

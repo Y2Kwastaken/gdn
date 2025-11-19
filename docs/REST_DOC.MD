@@ -96,6 +96,6 @@ X-API-Key: admin-only-api key
 
 ```json
 {
-  "valid": "true"
+  "valid": true
 }
 ```

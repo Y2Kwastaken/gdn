@@ -9,18 +9,6 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-type ImageMeta struct {
-	Id          uuid.UUID
-	ImageName   string
-	ImageType   string
-	Description string
-	Tags        []string
-}
-
-type Database struct {
-	conn *sql.DB
-}
-
 func NewDBConnection(constr string) (*Database, error) {
 	conn, err := sql.Open("sqlite", constr)
 	if err != nil {

@@ -1,11 +1,22 @@
-package internal
+package httpserv
 
 import (
 	"log"
 	"net"
 	"net/http"
 	"strings"
+
+	"github.com/Y2Kwastaken/gdn/rest"
 )
+
+var (
+	endpoint_handlers = make(map[string]func(*FileStore, string, http.ResponseWriter, *http.Request))
+)
+
+func registerEndpoints() {
+	endpoint_handlers["photos"] = rest.PhotoEndpoints
+	endpoint_handlers["auth"] = rest.AuthEndpoints
+}
 
 func SetupHttpServer(store *FileStore) {
 	go cleanLimiters()
